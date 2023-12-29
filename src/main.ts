@@ -19,6 +19,8 @@ const camera = new THREE.PerspectiveCamera(
 /**
  * Textures
  */
+
+// baked texture
 const bakedTexture = textureLoader.load("baked-room.jpg");
 bakedTexture.flipY = false;
 bakedTexture.colorSpace = THREE.SRGBColorSpace;
@@ -112,12 +114,18 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
   const chairSupport = gltf.scene.children.find(
     (mesh) => mesh.name === "chairSupport"
   );
-  console.log(chairSupport);
 
   if (chairSupport)
     ((chairSupport as THREE.Mesh).material as THREE.Material).side =
       THREE.DoubleSide;
   ((chairSupport as THREE.Mesh).material as THREE.Material).transparent = true;
+
+  scene.add(gltf.scene);
+});
+
+// Mouse
+gltfLoader.load("/mouse.glb", (gltf) => {
+  gltf.scene.position.y = -0.5;
 
   scene.add(gltf.scene);
 });
