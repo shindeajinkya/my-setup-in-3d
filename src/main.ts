@@ -25,10 +25,20 @@ const bakedTexture = textureLoader.load("baked-room.jpg");
 bakedTexture.flipY = false;
 bakedTexture.colorSpace = THREE.SRGBColorSpace;
 
+// laptop screen texture
+const laptopScreenTexture = textureLoader.load("laptopScreen.jpg");
+laptopScreenTexture.flipY = false;
+laptopScreenTexture.colorSpace = THREE.SRGBColorSpace;
+laptopScreenTexture.wrapS = THREE.ClampToEdgeWrapping;
+laptopScreenTexture.wrapT = THREE.ClampToEdgeWrapping;
+
 /**
  * Materials
  */
 const bakedMaterials = new THREE.MeshBasicMaterial({ map: bakedTexture });
+const laptopScreenMaterial = new THREE.MeshBasicMaterial({
+  map: laptopScreenTexture,
+});
 
 /**
  * Sizes
@@ -109,16 +119,37 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
   });
 
   gltf.scene.position.y = -0.5;
-  console.log(gltf.scene);
+
+  const setup = gltf.scene.children.find((mesh) => mesh.name === "Setup");
+  const laptopScreen = gltf.scene.children.find(
+    (mesh) => mesh.name === "laptopScreen"
+  );
+
+  if (setup) {
+    (setup as THREE.Mesh).material = bakedMaterials;
+  }
+
+  if (laptopScreen) {
+    console.log(laptopScreen);
+    (laptopScreen as THREE.Mesh).material = laptopScreenMaterial;
+  }
 
   const chairSupport = gltf.scene.children.find(
     (mesh) => mesh.name === "chairSupport"
   );
 
-  if (chairSupport)
+  const lampBall = gltf.scene.children.find((mesh) => mesh.name === "lampBall");
+
+  if (chairSupport) {
     ((chairSupport as THREE.Mesh).material as THREE.Material).side =
       THREE.DoubleSide;
-  ((chairSupport as THREE.Mesh).material as THREE.Material).transparent = true;
+  }
+
+  if (lampBall) {
+    (lampBall as THREE.Mesh).material = new THREE.MeshBasicMaterial({
+      color: "#ffffff",
+    });
+  }
 
   scene.add(gltf.scene);
 });
@@ -145,14 +176,8 @@ camera.lookAt(new THREE.Vector3(0, 6, 0));
 /**
  * Animate
  */
-// const clock = new THREE.Clock();
-// let previousTime = 0;
 
 function animate() {
-  // const elapsedTime = clock.getElapsedTime();
-  // const deltaTime = elapsedTime - previousTime;
-  // previousTime = elapsedTime;
-
   controls.update();
 
   renderer.render(scene, camera);
