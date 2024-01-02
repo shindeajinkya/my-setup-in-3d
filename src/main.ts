@@ -29,7 +29,13 @@ bakedTexture.colorSpace = THREE.SRGBColorSpace;
 
 // laptop screen texture
 const laptopScreenTexture = textureLoader.load("laptopScreen.jpg");
+laptopScreenTexture.flipY = false;
 laptopScreenTexture.colorSpace = THREE.SRGBColorSpace;
+
+// laptop screen texture
+const monitorScreenTexture = textureLoader.load("monitorScreen.jpg");
+monitorScreenTexture.flipY = false;
+monitorScreenTexture.colorSpace = THREE.SRGBColorSpace;
 
 /**
  * Materials
@@ -37,6 +43,9 @@ laptopScreenTexture.colorSpace = THREE.SRGBColorSpace;
 const bakedMaterials = new THREE.MeshBasicMaterial({ map: bakedTexture });
 const laptopScreenMaterial = new THREE.MeshBasicMaterial({
   map: laptopScreenTexture,
+});
+const monitorScreenMaterial = new THREE.MeshBasicMaterial({
+  map: monitorScreenTexture,
 });
 
 /**
@@ -159,13 +168,20 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
     (mesh) => mesh.name === "laptopScreen"
   );
 
+  const monitorScreen = gltf.scene.children.find(
+    (mesh) => mesh.name === "monitorScreen"
+  );
+
   if (setup) {
     (setup as THREE.Mesh).material = bakedMaterials;
   }
 
   if (laptopScreen) {
-    console.log(laptopScreen);
     (laptopScreen as THREE.Mesh).material = laptopScreenMaterial;
+  }
+
+  if (monitorScreen) {
+    (monitorScreen as THREE.Mesh).material = monitorScreenMaterial;
   }
 
   const chairSupport = gltf.scene.children.find(
