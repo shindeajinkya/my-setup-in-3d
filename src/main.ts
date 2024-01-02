@@ -3,6 +3,8 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import "./style.css";
 
+// const fragmentShade;
+
 // Loaders
 const gltfLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader();
@@ -27,10 +29,7 @@ bakedTexture.colorSpace = THREE.SRGBColorSpace;
 
 // laptop screen texture
 const laptopScreenTexture = textureLoader.load("laptopScreen.jpg");
-laptopScreenTexture.flipY = false;
 laptopScreenTexture.colorSpace = THREE.SRGBColorSpace;
-laptopScreenTexture.wrapS = THREE.ClampToEdgeWrapping;
-laptopScreenTexture.wrapT = THREE.ClampToEdgeWrapping;
 
 /**
  * Materials
@@ -39,6 +38,41 @@ const bakedMaterials = new THREE.MeshBasicMaterial({ map: bakedTexture });
 const laptopScreenMaterial = new THREE.MeshBasicMaterial({
   map: laptopScreenTexture,
 });
+
+/**
+ * ShaderMaterials
+ */
+// const laptopShaderMaterial = new THREE.ShaderMaterial({
+//   vertexShader: `
+
+//     varying vec2 vUv;
+
+//     void main() {
+//         vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+
+//         vec4 viewPosition = viewMatrix * modelPosition;
+//         vec4 projectedPosition = projectionMatrix * viewPosition;
+
+//         gl_Position = projectedPosition;
+
+//         vUv = uv;
+//     }
+//   `,
+//   fragmentShader: `
+//     varying vec2 vUv;
+
+//     uniform sampler2D uTexture;
+
+//     void main() {
+//         vec4 textureColor = texture2D(uTexture, vUv);
+
+//         gl_FragColor = textureColor;
+//     }
+//   `,
+//   uniforms: {
+//     uTexture: { value: laptopScreenTexture },
+//   },
+// });
 
 /**
  * Sizes
