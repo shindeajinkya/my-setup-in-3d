@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { renderIframeInWebGL } from "./renderIframe";
 import "./style.css";
 
 // const fragmentShade;
@@ -110,7 +111,7 @@ const renderer = new THREE.WebGLRenderer({
   antialias: true,
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+document.getElementById("app")?.appendChild(renderer.domElement);
 
 // Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -187,7 +188,6 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
   const chairSupport = gltf.scene.children.find(
     (mesh) => mesh.name === "chairSupport"
   );
-
   const lampBall = gltf.scene.children.find((mesh) => mesh.name === "lampBall");
 
   if (chairSupport) {
@@ -212,16 +212,69 @@ gltfLoader.load("/mouse.glb", (gltf) => {
 });
 
 // Geometry
-// const geometry = new THREE.BoxGeometry(1, 1, 1);
-// const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-// const cube = new THREE.Mesh(geometry, material);
-// scene.add(cube);
+const group = new THREE.Group();
+const geometry = new THREE.PlaneGeometry(1, 1, 1);
+const material = new THREE.ShaderMaterial({
+  vertexShader: /* glsl */ `
+          /*
+            This shader is from the THREE's SpriteMaterial.
+            We need to turn the backing plane into a Sprite
+            (make it always face the camera) if "transfrom" 
+            is false. 
+          */
+          #include <common>
+
+          void main() {
+            vec2 center = vec2(0., 1.);
+            float rotation = 0.0;
+            
+            // This is somewhat arbitrary, but it seems to work well
+            // Need to figure out how to derive this dynamically if it even matters
+            float size = 0.03;
+
+            vec4 mvPosition = modelViewMatrix * vec4( 0.0, 0.0, 0.0, 1.0 );
+            vec2 scale;
+            scale.x = length( vec3( modelMatrix[ 0 ].x, modelMatrix[ 0 ].y, modelMatrix[ 0 ].z ) );
+            scale.y = length( vec3( modelMatrix[ 1 ].x, modelMatrix[ 1 ].y, modelMatrix[ 1 ].z ) );
+
+            bool isPerspective = isPerspectiveMatrix( projectionMatrix );
+            if ( isPerspective ) scale *= - mvPosition.z;
+
+            vec2 alignedPosition = ( position.xy - ( center - vec2( 0.5 ) ) ) * scale * size;
+            vec2 rotatedPosition;
+            rotatedPosition.x = cos( rotation ) * alignedPosition.x - sin( rotation ) * alignedPosition.y;
+            rotatedPosition.y = sin( rotation ) * alignedPosition.x + cos( rotation ) * alignedPosition.y;
+            mvPosition.xy += rotatedPosition;
+
+            gl_Position = projectionMatrix * mvPosition;
+          }
+      `,
+  fragmentShader: /* glsl */ `
+        void main() {
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+        }
+      `,
+});
+const plane = new THREE.Mesh(geometry, material);
+group.add(plane);
+scene.add(group);
 
 camera.position.x = 3;
 camera.position.z = 3;
 camera.position.y = 2;
 
 camera.lookAt(new THREE.Vector3(0, 6, 0));
+
+const updateIframe = renderIframeInWebGL(
+  document.querySelector(".htmlContainer"),
+  group,
+  plane,
+  camera,
+  sizes,
+  scene
+);
+
+console.log(updateIframe);
 
 /**
  * Animate
@@ -231,6 +284,8 @@ function animate() {
   controls.update();
 
   renderer.render(scene, camera);
+
+  updateIframe();
 
   requestAnimationFrame(animate);
 }
