@@ -119,6 +119,12 @@ button:focus-visible {
   cursor: not-allowed;
 }
 
+@media screen and (max-width: 426px) {
+  #toggle-btn {
+    display: none;
+  }
+}
+
 
 @media (prefers-color-scheme: light) {
   :root {

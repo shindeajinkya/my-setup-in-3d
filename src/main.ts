@@ -11,7 +11,8 @@ interface ExtendedWindow extends Window {
 
 declare let window: ExtendedWindow;
 
-let updateIframe1: () => void, updateIframe2: () => void;
+let updateIframe1: ReturnType<typeof renderIframeInWebGL>,
+  updateIframe2: ReturnType<typeof renderIframeInWebGL>;
 
 let isMonitorView = false;
 
@@ -60,10 +61,27 @@ const camera = new THREE.PerspectiveCamera(
 const bakedTexture = textureLoader.load("baked-room.jpg");
 bakedTexture.flipY = false;
 bakedTexture.colorSpace = THREE.SRGBColorSpace;
+
+// laptop screen texture
+const laptopScreenTexture = textureLoader.load("laptopScreen.jpg");
+laptopScreenTexture.flipY = false;
+laptopScreenTexture.colorSpace = THREE.SRGBColorSpace;
+
+// laptop screen texture
+const monitorScreenTexture = textureLoader.load("monitorScreen.jpg");
+monitorScreenTexture.flipY = false;
+monitorScreenTexture.colorSpace = THREE.SRGBColorSpace;
+
 /**
  * Materials
  */
 const bakedMaterials = new THREE.MeshBasicMaterial({ map: bakedTexture });
+const laptopScreenMaterial = new THREE.MeshBasicMaterial({
+  map: laptopScreenTexture,
+});
+const monitorScreenMaterial = new THREE.MeshBasicMaterial({
+  map: monitorScreenTexture,
+});
 
 /**
  * Sizes
@@ -72,6 +90,8 @@ const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
+
+const isOnMobile = sizes.width <= 425;
 
 window.addEventListener("resize", () => {
   // Update sizes
@@ -177,8 +197,6 @@ group1.rotation.x = -Math.PI * 0.064;
 group1.rotation.z = Math.PI * 0.01;
 
 // group.updateMatrix();
-group1.add(plane1);
-scene.add(group1);
 
 // Group 2
 group2.position.x = 0.213;
@@ -194,8 +212,13 @@ group2.rotation.y = -0.352;
 // group1.rotation.x = -Math.PI * 0.064;
 // group2.rotation.z = Math.PI * 0.01;
 
-group2.add(plane2);
-scene.add(group2);
+if (!isOnMobile) {
+  group1.add(plane1);
+  scene.add(group1);
+
+  group2.add(plane2);
+  scene.add(group2);
+}
 
 // loading a model
 gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
@@ -225,6 +248,24 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
     (lampBall as THREE.Mesh).material = new THREE.MeshBasicMaterial({
       color: "#ffffff",
     });
+  }
+
+  if (isOnMobile) {
+    const laptopScreen = gltf.scene.children.find(
+      (mesh) => mesh.name === "laptopScreen"
+    );
+
+    const monitorScreen = gltf.scene.children.find(
+      (mesh) => mesh.name === "monitorScreen"
+    );
+
+    if (laptopScreen) {
+      (laptopScreen as THREE.Mesh).material = laptopScreenMaterial;
+    }
+
+    if (monitorScreen) {
+      (monitorScreen as THREE.Mesh).material = monitorScreenMaterial;
+    }
   }
 
   scene.add(gltf.scene);

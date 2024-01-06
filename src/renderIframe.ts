@@ -113,6 +113,7 @@ export function renderIframeInWebGL(
   transformInner: any,
   innerHtml: string
 ) {
+  if (size.width <= 425) return;
   let isMeshSizeSet = false;
 
   transformInner.innerHTML = innerHtml;
