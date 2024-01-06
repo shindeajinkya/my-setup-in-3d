@@ -2,9 +2,38 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { renderIframeInWebGL } from "./renderIframe";
+import GUI from "lil-gui";
 import "./style.css";
+import gsap from "gsap";
+interface ExtendedWindow extends Window {
+  camera: THREE.PerspectiveCamera;
+  getCameraDirection: () => void;
+}
 
-// const fragmentShade;
+declare let window: ExtendedWindow;
+
+let isMonitorView = false;
+
+// Debug
+const gui = new GUI();
+gui.hide();
+
+const transformOuter1 = document.getElementById("transform-outer-1");
+const transformInner1 = document.getElementById("transform-inner-1");
+
+const transformOuter2 = document.getElementById("transform-outer-2");
+const transformInner2 = document.getElementById("transform-inner-2");
+
+const iframesToResize = [
+  {
+    inner: transformInner1,
+    outer: transformOuter1,
+  },
+  {
+    inner: transformInner2,
+    outer: transformOuter2,
+  },
+];
 
 // Loaders
 const gltfLoader = new GLTFLoader();
@@ -50,41 +79,6 @@ const monitorScreenMaterial = new THREE.MeshBasicMaterial({
 });
 
 /**
- * ShaderMaterials
- */
-// const laptopShaderMaterial = new THREE.ShaderMaterial({
-//   vertexShader: `
-
-//     varying vec2 vUv;
-
-//     void main() {
-//         vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-
-//         vec4 viewPosition = viewMatrix * modelPosition;
-//         vec4 projectedPosition = projectionMatrix * viewPosition;
-
-//         gl_Position = projectedPosition;
-
-//         vUv = uv;
-//     }
-//   `,
-//   fragmentShader: `
-//     varying vec2 vUv;
-
-//     uniform sampler2D uTexture;
-
-//     void main() {
-//         vec4 textureColor = texture2D(uTexture, vUv);
-
-//         gl_FragColor = textureColor;
-//     }
-//   `,
-//   uniforms: {
-//     uTexture: { value: laptopScreenTexture },
-//   },
-// });
-
-/**
  * Sizes
  */
 const sizes = {
@@ -101,6 +95,23 @@ window.addEventListener("resize", () => {
   camera.aspect = sizes.width / sizes.height;
   camera.updateProjectionMatrix();
 
+  // update transform Inner and outer
+  for (let i = 0; i < iframesToResize.length; i++) {
+    const cur = iframesToResize[i];
+
+    if (cur.inner && cur.outer) {
+      cur.outer.style.position = "absolute";
+      cur.outer.style.top = "0";
+      cur.outer.style.left = "0";
+      cur.outer.style.width = sizes.width + "px";
+      cur.outer.style.height = sizes.height + "px";
+      cur.outer.style.transformStyle = "preserve-3d";
+
+      cur.inner.style.position = "absolute";
+      cur.inner.style.pointerEvents = "auto";
+    }
+  }
+
   // Update renderer
   renderer.setSize(sizes.width, sizes.height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -111,10 +122,12 @@ const renderer = new THREE.WebGLRenderer({
   antialias: true,
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.getElementById("app")?.appendChild(renderer.domElement);
+document.getElementById("app")?.prepend(renderer.domElement);
 
 // Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
+// controls.target = new THREE.Vector3(0.1, 0.5, 0);
+
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
@@ -153,12 +166,6 @@ directionalLight.position.set(0, 4, 4);
 // loading a model
 gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
   gltf.scene.traverse((child) => {
-    // if (child.name == "Cube011" || child.name == "Cube014") {
-    //   child.material = poleLightMaterial;
-    // } else if (child.name == "Circle") {
-    //   child.material = portalLightMaterial;
-    // } else {
-    // }
     (child as THREE.Mesh).material = bakedMaterials;
   });
 
@@ -202,6 +209,7 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
   }
 
   scene.add(gltf.scene);
+  scene.updateMatrixWorld();
 });
 
 // Mouse
@@ -209,72 +217,98 @@ gltfLoader.load("/mouse.glb", (gltf) => {
   gltf.scene.position.y = -0.5;
 
   scene.add(gltf.scene);
+  scene.updateMatrixWorld();
 });
 
 // Geometry
-const group = new THREE.Group();
+const group1 = new THREE.Group();
+const group2 = new THREE.Group();
 const geometry = new THREE.PlaneGeometry(1, 1, 1);
 const material = new THREE.ShaderMaterial({
-  vertexShader: /* glsl */ `
-          /*
-            This shader is from the THREE's SpriteMaterial.
-            We need to turn the backing plane into a Sprite
-            (make it always face the camera) if "transfrom" 
-            is false. 
-          */
-          #include <common>
-
-          void main() {
-            vec2 center = vec2(0., 1.);
-            float rotation = 0.0;
-            
-            // This is somewhat arbitrary, but it seems to work well
-            // Need to figure out how to derive this dynamically if it even matters
-            float size = 0.03;
-
-            vec4 mvPosition = modelViewMatrix * vec4( 0.0, 0.0, 0.0, 1.0 );
-            vec2 scale;
-            scale.x = length( vec3( modelMatrix[ 0 ].x, modelMatrix[ 0 ].y, modelMatrix[ 0 ].z ) );
-            scale.y = length( vec3( modelMatrix[ 1 ].x, modelMatrix[ 1 ].y, modelMatrix[ 1 ].z ) );
-
-            bool isPerspective = isPerspectiveMatrix( projectionMatrix );
-            if ( isPerspective ) scale *= - mvPosition.z;
-
-            vec2 alignedPosition = ( position.xy - ( center - vec2( 0.5 ) ) ) * scale * size;
-            vec2 rotatedPosition;
-            rotatedPosition.x = cos( rotation ) * alignedPosition.x - sin( rotation ) * alignedPosition.y;
-            rotatedPosition.y = sin( rotation ) * alignedPosition.x + cos( rotation ) * alignedPosition.y;
-            mvPosition.xy += rotatedPosition;
-
-            gl_Position = projectionMatrix * mvPosition;
-          }
-      `,
   fragmentShader: /* glsl */ `
         void main() {
           gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
         }
       `,
+  side: THREE.DoubleSide,
 });
-const plane = new THREE.Mesh(geometry, material);
-group.add(plane);
-scene.add(group);
+
+const plane1 = new THREE.Mesh(geometry, material);
+const plane2 = new THREE.Mesh(geometry, material);
+// geometry.scale(0.4, 0.25, 0);
+
+// Group 1
+group1.position.x = -0.465;
+group1.position.y = 0.31;
+group1.position.z = -0.8;
+
+group1.rotation.y = Math.PI * 0.056;
+group1.rotation.x = -Math.PI * 0.064;
+group1.rotation.z = Math.PI * 0.01;
+
+// group.updateMatrix();
+group1.add(plane1);
+scene.add(group1);
+
+// Group 2
+group2.position.x = 0.213;
+group2.position.y = 0.485;
+group2.position.z = -0.663;
+
+gui.add(group2.position, "x").step(0.001).min(0.001).max(0.7);
+gui.add(group2.position, "y").step(0.001).min(0.001).max(0.7);
+gui.add(group2.position, "z").step(0.001).min(-0.7).max(0.7);
+gui.add(group2.rotation, "y").step(0.001).min(-Math.PI).max(Math.PI);
+
+group2.rotation.y = -0.352;
+// group1.rotation.x = -Math.PI * 0.064;
+// group2.rotation.z = Math.PI * 0.01;
+
+group2.add(plane2);
+scene.add(group2);
+
+const updateIframe1 = renderIframeInWebGL(
+  document.getElementById("html-container-1"),
+  document.querySelector("canvas"),
+  group1,
+  plane1,
+  camera,
+  sizes,
+  scene,
+  transformOuter1,
+  transformInner1
+);
+
+const udpateIframe2 = renderIframeInWebGL(
+  document.getElementById("html-container-2"),
+  document.querySelector("canvas"),
+  group2,
+  plane2,
+  camera,
+  sizes,
+  scene,
+  transformOuter2,
+  transformInner2
+);
 
 camera.position.x = 3;
 camera.position.z = 3;
 camera.position.y = 2;
 
-camera.lookAt(new THREE.Vector3(0, 6, 0));
+console.log(controls.target);
 
-const updateIframe = renderIframeInWebGL(
-  document.querySelector(".htmlContainer"),
-  group,
-  plane,
-  camera,
-  sizes,
-  scene
-);
+// camera.lookAt(new THREE.Vector3(0, 6, 0));
 
-console.log(updateIframe);
+window.camera = camera;
+window.getCameraDirection = () => {
+  console.log(camera.getWorldDirection(new THREE.Vector3()));
+};
+
+// camera.position.x = 0.324387217940839;
+// camera.position.y = 0.7221798606898963;
+// camera.position.z = 1.4337901574019956;
+
+camera.updateProjectionMatrix();
 
 /**
  * Animate
@@ -283,10 +317,68 @@ console.log(updateIframe);
 function animate() {
   controls.update();
 
-  renderer.render(scene, camera);
+  updateIframe1();
+  udpateIframe2();
 
-  updateIframe();
+  renderer.render(scene, camera);
 
   requestAnimationFrame(animate);
 }
 animate();
+
+/**
+ * go to monitor view
+ */
+
+const toggleButton = document.getElementById("toggle-btn") as HTMLButtonElement;
+
+toggleButton?.addEventListener("click", () => {
+  toggleMonitorView();
+});
+
+function toggleMonitorView() {
+  if (!isMonitorView) {
+    isMonitorView = true;
+    renderer.domElement.style.pointerEvents = "none";
+    toggleButton.disabled = true;
+    toggleButton.innerText = "Close";
+    gsap.to(camera.position, {
+      duration: 2,
+      x: 0.324387217940839,
+      y: 0.7221798606898963,
+      z: 1.4337901574019956,
+    });
+    // camera.position.set(
+    //   0.324387217940839,
+    //   0.7221798606898963,
+    //   1.4337901574019956
+    // );
+    gsap.to(controls.target, {
+      duration: 2,
+      x: 0.1,
+      y: 0.5,
+      onComplete: () => {
+        toggleButton.disabled = false;
+      },
+    });
+    // controls.target.set(0.1, 0.5, 0);
+  } else {
+    isMonitorView = false;
+    gsap.to(camera.position, {
+      duration: 2,
+      x: 3,
+      y: 3,
+      z: 2,
+    });
+    gsap.to(controls.target, {
+      duration: 2,
+      x: 0,
+      y: 0,
+      onComplete: () => {
+        renderer.domElement.style.pointerEvents = "auto";
+      },
+    });
+    // camera.position.set(3, 3, 2);
+    // controls.target.set(0, 0, 0);
+  }
+}
