@@ -110,9 +110,12 @@ export function renderIframeInWebGL(
   size: { width: number; height: number },
   scene: Scene,
   transformOuter: any,
-  transformInner: any
+  transformInner: any,
+  innerHtml: string
 ) {
   let isMeshSizeSet = false;
+
+  transformInner.innerHTML = innerHtml;
 
   // occlude
   glDomElement.style.zIndex = `${Math.floor(zIndexRange[0] / 2)}`;

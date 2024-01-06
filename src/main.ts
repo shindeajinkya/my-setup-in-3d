@@ -239,7 +239,8 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
     sizes,
     scene,
     transformOuter1,
-    transformInner1
+    transformInner1,
+    `<iframe src="https://www.youtube.com/embed/6VU-TLJmNu8?si=dcnoL0NuHZoNGCJ2&autoplay=1&mute=1" allow="autoplay; encrypted-media"></iframe>`
   );
 
   updateIframe2 = renderIframeInWebGL(
@@ -251,7 +252,8 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
     sizes,
     scene,
     transformOuter2,
-    transformInner2
+    transformInner2,
+    `<iframe src="https://boules.vercel.app/"></iframe>`
   );
 });
 
