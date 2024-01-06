@@ -82,21 +82,6 @@ export function defaultCalculatePosition(
   ];
 }
 
-function objectScale(el: Object3D, camera: Camera) {
-  if (camera instanceof OrthographicCamera) {
-    return camera.zoom;
-  } else if (camera instanceof PerspectiveCamera) {
-    const objectPos = v1.setFromMatrixPosition(el.matrixWorld);
-    const cameraPos = v2.setFromMatrixPosition(camera.matrixWorld);
-    const vFOV = (camera.fov * Math.PI) / 180;
-    const dist = objectPos.distanceTo(cameraPos);
-    const scaleFOV = 2 * Math.tan(vFOV / 2) * dist;
-    return 1 / scaleFOV;
-  } else {
-    return 1;
-  }
-}
-
 function objectZIndex(
   el: Object3D,
   camera: Camera,
