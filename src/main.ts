@@ -206,13 +206,6 @@ gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
   gltf.scene.position.y = -0.5;
 
   const setup = gltf.scene.children.find((mesh) => mesh.name === "Setup");
-  const laptopScreen = gltf.scene.children.find(
-    (mesh) => mesh.name === "laptopScreen"
-  );
-
-  const monitorScreen = gltf.scene.children.find(
-    (mesh) => mesh.name === "monitorScreen"
-  );
 
   if (setup) {
     (setup as THREE.Mesh).material = bakedMaterials;
