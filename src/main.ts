@@ -7,16 +7,20 @@ import "./style.css";
 import gsap from "gsap";
 interface ExtendedWindow extends Window {
   camera: THREE.PerspectiveCamera;
-  getCameraDirection: () => void;
 }
 
 declare let window: ExtendedWindow;
+
+let updateIframe1: () => void, updateIframe2: () => void;
 
 let isMonitorView = false;
 
 // Debug
 const gui = new GUI();
 gui.hide();
+
+const htmlContainer1 = document.getElementById("html-container-1");
+const htmlContainer2 = document.getElementById("html-container-2");
 
 const transformOuter1 = document.getElementById("transform-outer-1");
 const transformInner1 = document.getElementById("transform-inner-1");
@@ -56,27 +60,10 @@ const camera = new THREE.PerspectiveCamera(
 const bakedTexture = textureLoader.load("baked-room.jpg");
 bakedTexture.flipY = false;
 bakedTexture.colorSpace = THREE.SRGBColorSpace;
-
-// laptop screen texture
-const laptopScreenTexture = textureLoader.load("laptopScreen.jpg");
-laptopScreenTexture.flipY = false;
-laptopScreenTexture.colorSpace = THREE.SRGBColorSpace;
-
-// laptop screen texture
-const monitorScreenTexture = textureLoader.load("monitorScreen.jpg");
-monitorScreenTexture.flipY = false;
-monitorScreenTexture.colorSpace = THREE.SRGBColorSpace;
-
 /**
  * Materials
  */
 const bakedMaterials = new THREE.MeshBasicMaterial({ map: bakedTexture });
-const laptopScreenMaterial = new THREE.MeshBasicMaterial({
-  map: laptopScreenTexture,
-});
-const monitorScreenMaterial = new THREE.MeshBasicMaterial({
-  map: monitorScreenTexture,
-});
 
 /**
  * Sizes
@@ -163,63 +150,6 @@ scene.add(directionalLight);
 
 directionalLight.position.set(0, 4, 4);
 
-// loading a model
-gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
-  gltf.scene.traverse((child) => {
-    (child as THREE.Mesh).material = bakedMaterials;
-  });
-
-  gltf.scene.position.y = -0.5;
-
-  const setup = gltf.scene.children.find((mesh) => mesh.name === "Setup");
-  const laptopScreen = gltf.scene.children.find(
-    (mesh) => mesh.name === "laptopScreen"
-  );
-
-  const monitorScreen = gltf.scene.children.find(
-    (mesh) => mesh.name === "monitorScreen"
-  );
-
-  if (setup) {
-    (setup as THREE.Mesh).material = bakedMaterials;
-  }
-
-  if (laptopScreen) {
-    (laptopScreen as THREE.Mesh).material = laptopScreenMaterial;
-  }
-
-  if (monitorScreen) {
-    (monitorScreen as THREE.Mesh).material = monitorScreenMaterial;
-  }
-
-  const chairSupport = gltf.scene.children.find(
-    (mesh) => mesh.name === "chairSupport"
-  );
-  const lampBall = gltf.scene.children.find((mesh) => mesh.name === "lampBall");
-
-  if (chairSupport) {
-    ((chairSupport as THREE.Mesh).material as THREE.Material).side =
-      THREE.DoubleSide;
-  }
-
-  if (lampBall) {
-    (lampBall as THREE.Mesh).material = new THREE.MeshBasicMaterial({
-      color: "#ffffff",
-    });
-  }
-
-  scene.add(gltf.scene);
-  scene.updateMatrixWorld();
-});
-
-// Mouse
-gltfLoader.load("/mouse.glb", (gltf) => {
-  gltf.scene.position.y = -0.5;
-
-  scene.add(gltf.scene);
-  scene.updateMatrixWorld();
-});
-
 // Geometry
 const group1 = new THREE.Group();
 const group2 = new THREE.Group();
@@ -267,42 +197,86 @@ group2.rotation.y = -0.352;
 group2.add(plane2);
 scene.add(group2);
 
-const updateIframe1 = renderIframeInWebGL(
-  document.getElementById("html-container-1"),
-  document.querySelector("canvas"),
-  group1,
-  plane1,
-  camera,
-  sizes,
-  scene,
-  transformOuter1,
-  transformInner1
-);
+// loading a model
+gltfLoader.load("/my-room-in-3d.glb", (gltf) => {
+  gltf.scene.traverse((child) => {
+    (child as THREE.Mesh).material = bakedMaterials;
+  });
 
-const udpateIframe2 = renderIframeInWebGL(
-  document.getElementById("html-container-2"),
-  document.querySelector("canvas"),
-  group2,
-  plane2,
-  camera,
-  sizes,
-  scene,
-  transformOuter2,
-  transformInner2
-);
+  gltf.scene.position.y = -0.5;
+
+  const setup = gltf.scene.children.find((mesh) => mesh.name === "Setup");
+  const laptopScreen = gltf.scene.children.find(
+    (mesh) => mesh.name === "laptopScreen"
+  );
+
+  const monitorScreen = gltf.scene.children.find(
+    (mesh) => mesh.name === "monitorScreen"
+  );
+
+  if (setup) {
+    (setup as THREE.Mesh).material = bakedMaterials;
+  }
+
+  const chairSupport = gltf.scene.children.find(
+    (mesh) => mesh.name === "chairSupport"
+  );
+  const lampBall = gltf.scene.children.find((mesh) => mesh.name === "lampBall");
+
+  if (chairSupport) {
+    ((chairSupport as THREE.Mesh).material as THREE.Material).side =
+      THREE.DoubleSide;
+  }
+
+  if (lampBall) {
+    (lampBall as THREE.Mesh).material = new THREE.MeshBasicMaterial({
+      color: "#ffffff",
+    });
+  }
+
+  scene.add(gltf.scene);
+  scene.updateMatrixWorld();
+
+  updateIframe1 = renderIframeInWebGL(
+    htmlContainer1,
+    renderer.domElement,
+    group1,
+    plane1,
+    camera,
+    sizes,
+    scene,
+    transformOuter1,
+    transformInner1
+  );
+
+  updateIframe2 = renderIframeInWebGL(
+    htmlContainer2,
+    renderer.domElement,
+    group2,
+    plane2,
+    camera,
+    sizes,
+    scene,
+    transformOuter2,
+    transformInner2
+  );
+});
+
+// Mouse
+gltfLoader.load("/mouse.glb", (gltf) => {
+  gltf.scene.position.y = -0.5;
+
+  scene.add(gltf.scene);
+  scene.updateMatrixWorld();
+});
 
 camera.position.x = 3;
 camera.position.z = 3;
 camera.position.y = 2;
 
-console.log(controls.target);
-
 // camera.lookAt(new THREE.Vector3(0, 6, 0));
 
 window.camera = camera;
-window.getCameraDirection = () => {
-  console.log(camera.getWorldDirection(new THREE.Vector3()));
-};
 
 // camera.position.x = 0.324387217940839;
 // camera.position.y = 0.7221798606898963;
@@ -317,8 +291,8 @@ camera.updateProjectionMatrix();
 function animate() {
   controls.update();
 
-  updateIframe1();
-  udpateIframe2();
+  updateIframe1?.();
+  updateIframe2?.();
 
   renderer.render(scene, camera);
 
@@ -364,6 +338,7 @@ function toggleMonitorView() {
     // controls.target.set(0.1, 0.5, 0);
   } else {
     isMonitorView = false;
+    toggleButton.innerText = "Play";
     gsap.to(camera.position, {
       duration: 2,
       x: 3,

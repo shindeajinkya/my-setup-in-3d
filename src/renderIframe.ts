@@ -115,7 +115,6 @@ export function renderIframeInWebGL(
   let isMeshSizeSet = false;
 
   // occlude
-  console.log(glDomElement);
   glDomElement.style.zIndex = `${Math.floor(zIndexRange[0] / 2)}`;
   glDomElement.style.position = "absolute";
   // glDomElement.style.pointerEvents = "none";
